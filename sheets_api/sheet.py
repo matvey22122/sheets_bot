@@ -1,0 +1,202 @@
+import re
+from datetime import datetime, timedelta
+from googleapiclient.discovery import build
+from google.oauth2 import service_account
+
+SCOPES = ['https://www.googleapis.com/auth/spreadsheets', 'https://www.googleapis.com/auth/drive']
+CREDENTIALS_FILE = 'credentials.json'
+
+
+def get_users():
+    credentials = service_account.Credentials.from_service_account_file(CREDENTIALS_FILE, scopes=SCOPES)
+    service = build('sheets', 'v4', credentials=credentials)
+    sheet = service.spreadsheets()
+
+    data = sheet.values().get(spreadsheetId="1T28I53cIKO6Un9VnO7VMkOSnLQFQXwRkAbRD7ojLHSc",
+                              range="Sheet1!B3:D10").execute()
+    data = data.get('values', [])
+
+    clean_data = []
+    for i in data:
+        if len(i) == 3:
+            clean_data.append(i)
+
+    return clean_data
+
+
+def _get_table_name():
+    days_to_subtract = datetime.now().weekday()
+
+    if days_to_subtract >= 5:
+        days_to_subtract = 7 - days_to_subtract
+        date = datetime.now() + timedelta(days=days_to_subtract)
+    else:
+        date = datetime.now() - timedelta(days=days_to_subtract)
+
+    # date = date - timedelta(days=7)  # TODO: remove!!!!
+    table_name = f"{date.day} {date.strftime('%B')} {date.year}"
+    date += timedelta(days=7)
+    table_future_name = f"{date.day} {date.strftime('%B')}"
+    return [table_name, date, table_future_name]
+
+
+def _get_days_to_catch():
+    days_to_catch = []
+
+    days_to_subtract = datetime.now().weekday()
+
+    if days_to_subtract >= 5:
+        days_to_subtract = 7 - days_to_subtract
+        date = datetime.now() + timedelta(days=days_to_subtract)
+    else:
+        date = datetime.now() - timedelta(days=days_to_subtract)
+
+    date = date - timedelta(days=2)
+    # date = date - timedelta(days=7)  # TODO: remove!!!!
+    days_to_catch.append([date.day, date.month, date.year])
+    for i in range(6):
+        date += timedelta(days=1)
+        days_to_catch.append([date.day, date.month, date.year])
+
+    return days_to_catch
+
+
+class Sheet:
+    credentials = service_account.Credentials.from_service_account_file(CREDENTIALS_FILE, scopes=SCOPES)
+    service = build('sheets', 'v4', credentials=credentials)
+    sheet = service.spreadsheets()
+
+    days_to_catch = _get_days_to_catch()
+    table_name, table_time, table_future_name = _get_table_name()
+
+    # print(days_to_catch, table_name, table_time)
+
+    def __init__(self, from_table, to_table, work_hours):
+        self.time_itervals = [["A", "B"], ["F", "G"], ["K", "L"], ["P", "Q"], ["U", "V"], ["Z", "AA"], ["AE", "AF"]]
+        self.from_table = from_table
+        self.to_table = to_table
+        self.work_hours = work_hours
+
+    def create_sheet(self):
+        results = self.sheet.sheets().copyTo(spreadsheetId="1e28J_83AL8hrBtvLuBarlZnjAbEJmXYQOgOMVGyxWfk",
+                                             sheetId="263768700",
+                                             body={'destination_spreadsheet_id': self.to_table}).execute()
+
+        self.sheet.batchUpdate(spreadsheetId=self.to_table, body={
+            'requests': [
+                {"updateSheetProperties": {
+                    "properties": {
+                        "sheetId": results['sheetId'],
+                        "title": self.table_name,
+                    },
+                    "fields": "title",
+                }}
+            ]
+        }).execute()
+
+        for i in range(7):
+            month = datetime.strptime(str(self.days_to_catch[i][1]), "%m").strftime("%B")
+            self.sheet.values().update(
+                spreadsheetId=self.to_table,
+                range=self.table_name + f"!{self.time_itervals[i][0]}3:{self.time_itervals[i][0]}3",
+                valueInputOption="RAW",
+                body={"values": [[f"{self.days_to_catch[i][0]} {month}"]]}).execute()
+
+        self.sheet.values().update(
+            spreadsheetId=self.to_table,
+            range=self.table_name + f"!V2:V2",
+            valueInputOption="RAW",
+            body={"values": [[f"{self.table_future_name}"]]}).execute()
+
+    def transport_data(self):
+        data = self.sheet.values().get(spreadsheetId=self.from_table, range="Sheet1!J500:M100000").execute()
+        data = self._prepare_data(data.get('values', []))
+        # print(data)
+        interval_for_comments = ["E", "J", "O", "T", "Y", "AD", "AI"]
+
+        try:
+            row = \
+                self.sheet.values().get(spreadsheetId=self.to_table, range=f'{self.table_name}!A3:AI3').execute().get(
+                    'values',
+                    [])[0]
+        except Exception as e:
+            self.create_sheet()
+            row = \
+                self.sheet.values().get(spreadsheetId=self.to_table, range=f'A3:AI3').execute().get(
+                    'values',
+                    [])[0]
+        for i in range(7):
+            number = str(self.days_to_catch[i][0])
+            if number not in data:
+                continue
+
+            records = []
+            for j in data[number]:
+                records.append(j[:2])
+            body = {
+                "values": records,
+            }
+
+            results = self.sheet.values().update(
+                spreadsheetId=self.to_table,
+                range=f'{self.table_name}!{self.time_itervals[i][0]}4:{self.time_itervals[i][1]}{4 + len(data[number]) - 1}',
+                valueInputOption="RAW",
+                body=body).execute()
+
+            for j in range(len(data[number])):
+                if len(data[number][j]) == 3:
+                    results = self.sheet.values().update(
+                        spreadsheetId=self.to_table,
+                        range=f'{self.table_name}!{interval_for_comments[i]}{4 + j}:{interval_for_comments[i]}{4 + j}',
+                        valueInputOption="RAW",
+                        body={"values": [["!!!"]]}).execute()
+
+    def _prepare_data(self, data):
+        clean_data = {}
+
+        for row in data:
+            # check if 'record' exist
+            if row[0] == "":
+                continue
+
+            if row[0] != row[2]:
+                if [datetime.strptime(row[0], '%d/%m/%Y').day, datetime.strptime(row[0], '%d/%m/%Y').month,
+                    datetime.strptime(row[0], '%d/%m/%Y').year] in self.days_to_catch:
+                    if str(datetime.strptime(row[0], '%d/%m/%Y').day) not in clean_data:
+                        clean_data[str(datetime.strptime(row[0], '%d/%m/%Y').day)] = []
+                    if [row[1], "23:59"] not in clean_data[str(datetime.strptime(row[0], '%d/%m/%Y').day)]:
+                        clean_data[str(datetime.strptime(row[0], '%d/%m/%Y').day)].append([row[1], "23:59"])
+
+                if [datetime.strptime(row[2], '%d/%m/%Y').day, datetime.strptime(row[2], '%d/%m/%Y').month,
+                    datetime.strptime(row[2], '%d/%m/%Y').year] in self.days_to_catch:
+                    if str(datetime.strptime(row[2], '%d/%m/%Y').day) not in clean_data:
+                        clean_data[str(datetime.strptime(row[2], '%d/%m/%Y').day)] = []
+                    if ["00:00", row[3]] not in clean_data[str(datetime.strptime(row[2], '%d/%m/%Y').day)]:
+                        clean_data[str(datetime.strptime(row[2], '%d/%m/%Y').day)].append(["00:00", row[3]])
+            elif [datetime.strptime(row[0], '%d/%m/%Y').day, datetime.strptime(row[0], '%d/%m/%Y').month,
+                  datetime.strptime(row[0], '%d/%m/%Y').year] in self.days_to_catch:
+                if str(datetime.strptime(row[0], '%d/%m/%Y').day) not in clean_data:
+                    clean_data[str(datetime.strptime(row[0], '%d/%m/%Y').day)] = []
+                if [row[1], row[3]] not in clean_data[str(datetime.strptime(row[0], '%d/%m/%Y').day)]:
+                    clean_data[str(datetime.strptime(row[0], '%d/%m/%Y').day)].append([row[1], row[3]])
+
+        for d in clean_data.keys():
+            for i in range(len(clean_data[d])):
+                li = datetime.strptime(clean_data[d][i][0], "%H:%M")
+                ri = datetime.strptime(clean_data[d][i][1], "%H:%M")
+                if ri < li:
+                    continue
+                for j in range(len(clean_data[d])):
+                    if i == j:
+                        continue
+                    lj = datetime.strptime(clean_data[d][j][0], "%H:%M")
+                    rj = datetime.strptime(clean_data[d][j][1], "%H:%M")
+
+                    if rj < lj:
+                        continue
+
+                    if li <= lj <= ri or li <= rj <= ri:
+                        clean_data[d][i] = [(li - timedelta(seconds=1)).strftime("%H:%M"), li.strftime("%H:%M"), "!!!"]
+                        clean_data[d][j] = [(lj - timedelta(seconds=1)).strftime("%H:%M"), lj.strftime("%H:%M"), "!!!"]
+
+        return clean_data
