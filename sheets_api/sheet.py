@@ -20,7 +20,7 @@ def get_users():
     for i in data:
         if len(i) == 3:
             clean_data.append(i)
-
+    #test
     for i in range(len(clean_data)):
         clean_data[i][0] = clean_data[i][0].split("/")[5]
         clean_data[i][2] = clean_data[i][2].split("/")[5]
