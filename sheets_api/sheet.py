@@ -18,12 +18,15 @@ def get_users():
 
     clean_data = []
     for i in data:
-        if len(i) == 3:
-            clean_data.append(i)
-    #test
+        ar = i
+        if len(ar) != 3:
+            ar.append("")
+        clean_data.append(ar)
+
     for i in range(len(clean_data)):
         clean_data[i][0] = clean_data[i][0].split("/")[5]
-        clean_data[i][2] = clean_data[i][2].split("/")[5]
+        if clean_data[i][2]:
+            clean_data[i][2] = clean_data[i][2].split("/")[5]
 
     return clean_data
 
@@ -113,11 +116,6 @@ class Sheet:
             body={"values": [[f"{self.table_future_name}"]]}).execute()
 
     def transport_data(self):
-        data = self.sheet.values().get(spreadsheetId=self.from_table, range="Sheet1!J500:M100000").execute()
-        data = self._prepare_data(data.get('values', []))
-        # print(data)
-        interval_for_comments = ["E", "J", "O", "T", "Y", "AD", "AI"]
-
         try:
             row = \
                 self.sheet.values().get(spreadsheetId=self.to_table, range=f'{self.table_name}!A3:AI3').execute().get(
@@ -129,6 +127,14 @@ class Sheet:
                 self.sheet.values().get(spreadsheetId=self.to_table, range=f'A3:AI3').execute().get(
                     'values',
                     [])[0]
+
+        if self.from_table == "":
+            return
+
+        data = self.sheet.values().get(spreadsheetId=self.from_table, range="Sheet1!J500:M100000").execute()
+        data = self._prepare_data(data.get('values', []))
+        # print(data)
+        interval_for_comments = ["E", "J", "O", "T", "Y", "AD", "AI"]
         for i in range(7):
             number = str(self.days_to_catch[i][0])
             if number not in data:
@@ -200,7 +206,8 @@ class Sheet:
                         continue
 
                     if li <= lj <= ri or li <= rj <= ri:
-                        clean_data[d][i] = [(li - timedelta(seconds=1)).strftime("%H:%M"), li.strftime("%H:%M"), "!!!"]
-                        clean_data[d][j] = [(lj - timedelta(seconds=1)).strftime("%H:%M"), lj.strftime("%H:%M"), "!!!"]
+                        clean_data[d][i] = [li.strftime("%H:%M"), (li - timedelta(seconds=1)).strftime("%H:%M"), f"!!! {datetime.strptime(clean_data[d][i][1], '%H:%M')}"]
+                        clean_data[d][j] = [lj.strftime("%H:%M"), (lj - timedelta(seconds=1)).strftime("%H:%M"), f"!!! {datetime.strptime(clean_data[d][j][1], '%H:%M')}"]
+            clean_data[d].sort()
 
         return clean_data
