@@ -215,7 +215,7 @@ class Sheet:
 
                     if li <= lj <= ri or li <= rj <= ri:
                         if li.strftime("%H:%M") == "00:00":
-                            clean_data[d][i] = [li.strftime("%H:%M"), i.strftime("%H:%M"), f"фича {datetime.strptime(clean_data[d][i][1], '%H:%M')}"]
+                            clean_data[d][i] = [li.strftime("%H:%M"), li.strftime("%H:%M"), f"фича {datetime.strptime(clean_data[d][i][1], '%H:%M')}"]
                         else:
                             clean_data[d][i] = [li.strftime("%H:%M"), (li - timedelta(seconds=1)).strftime("%H:%M"), f"!!! {datetime.strptime(clean_data[d][i][1], '%H:%M')}"]
 
