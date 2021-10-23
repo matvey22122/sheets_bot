@@ -40,7 +40,7 @@ def _get_table_name():
     else:
         date = datetime.now() - timedelta(days=days_to_subtract)
 
-    # date = date - timedelta(days=7)  # TODO: remove!!!!
+    date = date - timedelta(days=7)  # TODO: remove!!!!
     table_name = f"{date.day} {date.strftime('%B')} {date.year}"
     date += timedelta(days=7)
     table_future_name = f"{date.day} {date.strftime('%B')}"
@@ -59,7 +59,7 @@ def _get_days_to_catch():
         date = datetime.now() - timedelta(days=days_to_subtract)
 
     date = date - timedelta(days=2)
-    # date = date - timedelta(days=7)  # TODO: remove!!!!
+    date = date - timedelta(days=7)  # TODO: remove!!!!
     days_to_catch.append([date.day, date.month, date.year])
     for i in range(6):
         date += timedelta(days=1)
