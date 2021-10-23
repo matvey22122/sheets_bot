@@ -13,7 +13,7 @@ def get_users():
     sheet = service.spreadsheets()
 
     data = sheet.values().get(spreadsheetId="1T28I53cIKO6Un9VnO7VMkOSnLQFQXwRkAbRD7ojLHSc",
-                              range="Sheet1!B3:D10").execute()
+                              range="Sheet1!B2:D15").execute()
     data = data.get('values', [])
 
     clean_data = []
@@ -115,6 +115,12 @@ class Sheet:
             valueInputOption="RAW",
             body={"values": [[f"{self.table_future_name}"]]}).execute()
 
+        self.sheet.values().update(
+            spreadsheetId=self.to_table,
+            range=self.table_name + f"!J1:J1",
+            valueInputOption="USER_ENTERED",
+            body={"values": [[f"=СЧИТАТЬПУСТОТЫ(E3,AI3,AD3,Y3,T3,O3,J3)*12*{self.work_hours.split(':')[0]}"]]}).execute()
+
     def transport_data(self):
         try:
             row = \
@@ -159,7 +165,7 @@ class Sheet:
                         spreadsheetId=self.to_table,
                         range=f'{self.table_name}!{interval_for_comments[i]}{4 + j}:{interval_for_comments[i]}{4 + j}',
                         valueInputOption="RAW",
-                        body={"values": [["!!!"]]}).execute()
+                        body={"values": [[data[number][j][2]]]}).execute()
 
     def _prepare_data(self, data):
         clean_data = {}
@@ -193,9 +199,9 @@ class Sheet:
 
         for d in clean_data.keys():
             for i in range(len(clean_data[d])):
-                if len(clean_data[d][i][0]) < 4:
+                if len(clean_data[d][i][0]) < 5:
                     clean_data[d][i][0] = "0" + clean_data[d][i][0]
-                if len(clean_data[d][i][1]) < 4:
+                if len(clean_data[d][i][1]) < 5:
                     clean_data[d][i][1] = "0" + clean_data[d][i][1]
 
         for d in clean_data.keys():
@@ -215,15 +221,14 @@ class Sheet:
 
                     if li <= lj <= ri or li <= rj <= ri:
                         if li.strftime("%H:%M") == "00:00":
-                            clean_data[d][i] = [li.strftime("%H:%M"), li.strftime("%H:%M"), f"фича {datetime.strptime(clean_data[d][i][1], '%H:%M')}"]
+                            clean_data[d][i] = [li.strftime("%H:%M"), li.strftime("%H:%M"), f"фича {clean_data[d][i][1]}"]
                         else:
-                            clean_data[d][i] = [li.strftime("%H:%M"), (li - timedelta(seconds=1)).strftime("%H:%M"), f"!!! {datetime.strptime(clean_data[d][i][1], '%H:%M')}"]
+                            clean_data[d][i] = [li.strftime("%H:%M"), (li - timedelta(seconds=1)).strftime("%H:%M"), f"!!! {clean_data[d][i][1]}"]
 
                         if lj.strftime("%H:%M") == "00:00":
-                            clean_data[d][j] = [lj.strftime("%H:%M"), lj.strftime("%H:%M"), f"фича {datetime.strptime(clean_data[d][j][1], '%H:%M')}"]
+                            clean_data[d][j] = [lj.strftime("%H:%M"), lj.strftime("%H:%M"), f"фича {clean_data[d][j][1]}"]
                         else:
-                            clean_data[d][j] = [lj.strftime("%H:%M"), (lj - timedelta(seconds=1)).strftime("%H:%M"), f"!!! {datetime.strptime(clean_data[d][j][1], '%H:%M')}"]
+                            clean_data[d][j] = [lj.strftime("%H:%M"), (lj - timedelta(seconds=1)).strftime("%H:%M"), f"!!! {clean_data[d][j][1]}"]
 
             clean_data[d].sort()
-
         return clean_data
