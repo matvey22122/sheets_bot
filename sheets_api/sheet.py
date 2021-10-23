@@ -169,6 +169,7 @@ class Sheet:
             if row[0] == "":
                 continue
 
+            #если не в одном дне
             if row[0] != row[2]:
                 if [datetime.strptime(row[0], '%d/%m/%Y').day, datetime.strptime(row[0], '%d/%m/%Y').month,
                     datetime.strptime(row[0], '%d/%m/%Y').year] in self.days_to_catch:
@@ -192,6 +193,13 @@ class Sheet:
 
         for d in clean_data.keys():
             for i in range(len(clean_data[d])):
+                if len(clean_data[d][i][0]) < 4:
+                    clean_data[d][i][0] = "0" + clean_data[d][i][0]
+                if len(clean_data[d][i][1]) < 4:
+                    clean_data[d][i][1] = "0" + clean_data[d][i][1]
+
+        for d in clean_data.keys():
+            for i in range(len(clean_data[d])):
                 li = datetime.strptime(clean_data[d][i][0], "%H:%M")
                 ri = datetime.strptime(clean_data[d][i][1], "%H:%M")
                 if ri < li:
@@ -206,8 +214,16 @@ class Sheet:
                         continue
 
                     if li <= lj <= ri or li <= rj <= ri:
-                        clean_data[d][i] = [li.strftime("%H:%M"), (li - timedelta(seconds=1)).strftime("%H:%M"), f"!!! {datetime.strptime(clean_data[d][i][1], '%H:%M')}"]
-                        clean_data[d][j] = [lj.strftime("%H:%M"), (lj - timedelta(seconds=1)).strftime("%H:%M"), f"!!! {datetime.strptime(clean_data[d][j][1], '%H:%M')}"]
+                        if li.strftime("%H:%M") == "00:00":
+                            clean_data[d][i] = [li.strftime("%H:%M"), i.strftime("%H:%M"), f"фича {datetime.strptime(clean_data[d][i][1], '%H:%M')}"]
+                        else:
+                            clean_data[d][i] = [li.strftime("%H:%M"), (li - timedelta(seconds=1)).strftime("%H:%M"), f"!!! {datetime.strptime(clean_data[d][i][1], '%H:%M')}"]
+
+                        if lj.strftime("%H:%M") == "00:00":
+                            clean_data[d][j] = [lj.strftime("%H:%M"), lj.strftime("%H:%M"), f"фича {datetime.strptime(clean_data[d][j][1], '%H:%M')}"]
+                        else:
+                            clean_data[d][j] = [lj.strftime("%H:%M"), (lj - timedelta(seconds=1)).strftime("%H:%M"), f"!!! {datetime.strptime(clean_data[d][j][1], '%H:%M')}"]
+
             clean_data[d].sort()
 
         return clean_data
