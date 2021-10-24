@@ -42,9 +42,10 @@ def _get_table_name():
 
     # date = date - timedelta(days=7)  # TODO: remove!!!!
     table_name = f"{date.day} {date.strftime('%B')} {date.year}"
+    table_inner = date.strftime('%m/%d/%Y')
     date += timedelta(days=7)
     table_future_name = f"{date.day} {date.strftime('%B')}"
-    return [table_name, date, table_future_name]
+    return [table_name, date, table_future_name, table_inner]
 
 
 def _get_days_to_catch():
@@ -74,7 +75,7 @@ class Sheet:
     sheet = service.spreadsheets()
 
     days_to_catch = _get_days_to_catch()
-    table_name, table_time, table_future_name = _get_table_name()
+    table_name, table_time, table_future_name, table_inner = _get_table_name()
 
     # print(days_to_catch, table_name, table_time)
 
@@ -101,19 +102,26 @@ class Sheet:
             ]
         }).execute()
 
-        for i in range(7):
-            month = datetime.strptime(str(self.days_to_catch[i][1]), "%m").strftime("%B")
-            self.sheet.values().update(
-                spreadsheetId=self.to_table,
-                range=self.table_name + f"!{self.time_itervals[i][0]}3:{self.time_itervals[i][0]}3",
-                valueInputOption="RAW",
-                body={"values": [[f"{self.days_to_catch[i][0]} {month}"]]}).execute()
+        # for i in range(7):
+        #     month = datetime.strptime(str(self.days_to_catch[i][1]), "%m").strftime("%B")
+        #     self.sheet.values().update(
+        #         spreadsheetId=self.to_table,
+        #         range=self.table_name + f"!{self.time_itervals[i][0]}3:{self.time_itervals[i][0]}3",
+        #         valueInputOption="RAW",
+        #         body={"values": [[f"{self.days_to_catch[i][0]} {month}"]]}).execute()
 
         self.sheet.values().update(
             spreadsheetId=self.to_table,
-            range=self.table_name + f"!V2:V2",
-            valueInputOption="RAW",
-            body={"values": [[f"{self.table_future_name}"]]}).execute()
+            range=self.table_name + f"!K3:K3",
+            valueInputOption="USER_ENTERED",
+            body={
+                "values": [[self.table_inner]]}).execute()
+
+        # self.sheet.values().update(
+        #     spreadsheetId=self.to_table,
+        #     range=self.table_name + f"!V2:V2",
+        #     valueInputOption="RAW",
+        #     body={"values": [[f"{self.table_future_name}"]]}).execute()
 
         self.sheet.values().update(
             spreadsheetId=self.to_table,
@@ -142,6 +150,14 @@ class Sheet:
         # print(data)
         interval_for_comments = ["E", "J", "O", "T", "Y", "AD", "AI"]
         for i in range(7):
+            results = self.sheet.values().clear(
+                spreadsheetId=self.to_table,
+                range=f'{self.table_name}!{self.time_itervals[i][0]}4:{self.time_itervals[i][1]}16').execute()
+
+            results = self.sheet.values().clear(
+                spreadsheetId=self.to_table,
+                range=f'{self.table_name}!{interval_for_comments[i]}4:{interval_for_comments[i]}16').execute()
+
             number = str(self.days_to_catch[i][0])
             if number not in data:
                 continue
