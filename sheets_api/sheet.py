@@ -43,9 +43,29 @@ def _get_table_name():
     # date = date - timedelta(days=7)  # TODO: remove!!!!
     table_name = f"{date.day} {date.strftime('%B')} {date.year}"
     table_inner = date.strftime('%m/%d/%Y')
+    table_past = f"{(date - timedelta(days=7)).day} {(date - timedelta(days=7)).strftime('%B')} {(date - timedelta(days=7)).year}"
     date += timedelta(days=7)
     table_future_name = f"{date.day} {date.strftime('%B')}"
-    return [table_name, date, table_future_name, table_inner]
+    return [table_name, date, table_future_name, table_inner, table_past]
+
+
+def _get_table_name2():
+    days_to_subtract = datetime.now().weekday()
+
+    if days_to_subtract >= 5:
+        days_to_subtract = 7 - days_to_subtract
+        date = datetime.now() + timedelta(days=days_to_subtract)
+    else:
+        date = datetime.now() - timedelta(days=days_to_subtract)
+
+    date += timedelta(days=7)
+    # date = date - timedelta(days=7)  # TODO: remove!!!!
+    table_name = f"{date.day} {date.strftime('%B')} {date.year}"
+    table_inner = date.strftime('%m/%d/%Y')
+    table_past = f"{(date - timedelta(days=7)).day} {(date - timedelta(days=7)).strftime('%B')} {(date - timedelta(days=7)).year}"
+    date += timedelta(days=7)
+    table_future_name = f"{date.day} {date.strftime('%B')}"
+    return [table_name, date, table_future_name, table_inner, table_past]
 
 
 def _get_days_to_catch():
@@ -75,7 +95,8 @@ class Sheet:
     sheet = service.spreadsheets()
 
     days_to_catch = _get_days_to_catch()
-    table_name, table_time, table_future_name, table_inner = _get_table_name()
+    table_name, table_time, table_future_name, table_inner, table_past = _get_table_name()
+    table_name2, table_time2, table_future_name2, table_inner2, table_past2 = _get_table_name2()
 
     # print(days_to_catch, table_name, table_time)
 
@@ -102,14 +123,6 @@ class Sheet:
             ]
         }).execute()
 
-        # for i in range(7):
-        #     month = datetime.strptime(str(self.days_to_catch[i][1]), "%m").strftime("%B")
-        #     self.sheet.values().update(
-        #         spreadsheetId=self.to_table,
-        #         range=self.table_name + f"!{self.time_itervals[i][0]}3:{self.time_itervals[i][0]}3",
-        #         valueInputOption="RAW",
-        #         body={"values": [[f"{self.days_to_catch[i][0]} {month}"]]}).execute()
-
         self.sheet.values().update(
             spreadsheetId=self.to_table,
             range=self.table_name + f"!K3:K3",
@@ -117,15 +130,53 @@ class Sheet:
             body={
                 "values": [[self.table_inner]]}).execute()
 
-        # self.sheet.values().update(
-        #     spreadsheetId=self.to_table,
-        #     range=self.table_name + f"!V2:V2",
-        #     valueInputOption="RAW",
-        #     body={"values": [[f"{self.table_future_name}"]]}).execute()
+        self.sheet.values().update(
+            spreadsheetId=self.to_table,
+            range=self.table_name + f"!B1:B1",
+            valueInputOption="USER_ENTERED",
+            body={
+                "values": [[f"='{self.table_past}'!L1"]]}).execute()
 
         self.sheet.values().update(
             spreadsheetId=self.to_table,
             range=self.table_name + f"!J1:J1",
+            valueInputOption="USER_ENTERED",
+            body={"values": [[f"=СЧИТАТЬПУСТОТЫ(E3,AI3,AD3,Y3,T3,O3,J3)*12*{self.work_hours.split(':')[0]}"]]}).execute()
+
+    def create_sheet2(self):
+        results = self.sheet.sheets().copyTo(spreadsheetId="1e28J_83AL8hrBtvLuBarlZnjAbEJmXYQOgOMVGyxWfk",
+                                             sheetId="263768700",
+                                             body={'destination_spreadsheet_id': self.to_table}).execute()
+
+        self.sheet.batchUpdate(spreadsheetId=self.to_table, body={
+            'requests': [
+                {"updateSheetProperties": {
+                    "properties": {
+                        "sheetId": results['sheetId'],
+                        "title": self.table_name2,
+                    },
+                    "fields": "title",
+                }}
+            ]
+        }).execute()
+
+        self.sheet.values().update(
+            spreadsheetId=self.to_table,
+            range=self.table_name2 + f"!K3:K3",
+            valueInputOption="USER_ENTERED",
+            body={
+                "values": [[self.table_inner2]]}).execute()
+
+        self.sheet.values().update(
+            spreadsheetId=self.to_table,
+            range=self.table_name2 + f"!B1:B1",
+            valueInputOption="USER_ENTERED",
+            body={
+                "values": [[f"='{self.table_past2}'!L1"]]}).execute()
+
+        self.sheet.values().update(
+            spreadsheetId=self.to_table,
+            range=self.table_name2 + f"!J1:J1",
             valueInputOption="USER_ENTERED",
             body={"values": [[f"=СЧИТАТЬПУСТОТЫ(E3,AI3,AD3,Y3,T3,O3,J3)*12*{self.work_hours.split(':')[0]}"]]}).execute()
 
@@ -138,9 +189,17 @@ class Sheet:
         except Exception as e:
             self.create_sheet()
             row = \
-                self.sheet.values().get(spreadsheetId=self.to_table, range=f'A3:AI3').execute().get(
+                self.sheet.values().get(spreadsheetId=self.to_table, range=f'{self.table_name}!A3:AI3').execute().get(
                     'values',
                     [])[0]
+
+        try:
+            row = \
+                self.sheet.values().get(spreadsheetId=self.to_table, range=f'{self.table_name2}!A3:AI3').execute().get(
+                    'values',
+                    [])[0]
+        except Exception as e:
+            self.create_sheet2()
 
         if self.from_table == "":
             return
