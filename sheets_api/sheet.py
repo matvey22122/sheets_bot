@@ -294,16 +294,21 @@ class Sheet:
                     if rj < lj:
                         continue
 
-                    if li <= lj <= ri or li <= rj <= ri:
+                    if li < lj < ri or li < rj < ri:
                         if li.strftime("%H:%M") == "00:00":
-                            clean_data[d][i] = [li.strftime("%H:%M"), li.strftime("%H:%M"), f"фича {clean_data[d][i][1]}"]
+                            clean_data[d][i] = [li.strftime("%H:%M"), li.strftime("%H:%M"), f"!!! {clean_data[d][i][1]}"]
                         else:
                             clean_data[d][i] = [li.strftime("%H:%M"), (li - timedelta(seconds=1)).strftime("%H:%M"), f"!!! {clean_data[d][i][1]}"]
 
                         if lj.strftime("%H:%M") == "00:00":
-                            clean_data[d][j] = [lj.strftime("%H:%M"), lj.strftime("%H:%M"), f"фича {clean_data[d][j][1]}"]
+                            clean_data[d][j] = [lj.strftime("%H:%M"), lj.strftime("%H:%M"), f"!!! {clean_data[d][j][1]}"]
                         else:
                             clean_data[d][j] = [lj.strftime("%H:%M"), (lj - timedelta(seconds=1)).strftime("%H:%M"), f"!!! {clean_data[d][j][1]}"]
+
+            for d in clean_data.keys():
+                for i in range(len(clean_data[d])):
+                    if clean_data[d][i][0] == clean_data[d][i][1] == "23:59" and len(clean_data[d][i]) == 2:
+                        clean_data[d][i].append("фича")
 
             clean_data[d].sort()
         return clean_data
