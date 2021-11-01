@@ -13,7 +13,7 @@ def get_users():
     sheet = service.spreadsheets()
 
     data = sheet.values().get(spreadsheetId="1T28I53cIKO6Un9VnO7VMkOSnLQFQXwRkAbRD7ojLHSc",
-                              range="Sheet1!B2:D15").execute()
+                              range="People!B2:D15").execute()
     data = data.get('values', [])
 
     clean_data = []
