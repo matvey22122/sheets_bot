@@ -1,4 +1,3 @@
-import re
 from datetime import datetime, timedelta
 from googleapiclient.discovery import build
 from google.oauth2 import service_account
@@ -305,10 +304,12 @@ class Sheet:
                         else:
                             clean_data[d][j] = [lj.strftime("%H:%M"), (lj - timedelta(seconds=1)).strftime("%H:%M"), f"!!! {clean_data[d][j][1]}"]
 
-            for d in clean_data.keys():
-                for i in range(len(clean_data[d])):
-                    if clean_data[d][i][0] == clean_data[d][i][1] == "23:59" and len(clean_data[d][i]) == 2:
+            for i in range(len(clean_data[d])):
+                if clean_data[d][i][0] == clean_data[d][i][1] == "23:59" and len(clean_data[d][i]) == 2:
+                    if len(clean_data[d][i]) == 2:
                         clean_data[d][i].append("фича")
+                    else:
+                        clean_data[d][i][2] += " фича"
 
             clean_data[d].sort()
         return clean_data
