@@ -279,30 +279,33 @@ class Sheet:
                     clean_data[d][i][1] = "0" + clean_data[d][i][1]
 
         for d in clean_data.keys():
+            clean_data[d].sort()
+            j = -1
             for i in range(len(clean_data[d])):
                 li = datetime.strptime(clean_data[d][i][0], "%H:%M")
                 ri = datetime.strptime(clean_data[d][i][1], "%H:%M")
-                if ri < li:
+
+                if j == -1:
+                    j = i
                     continue
-                for j in range(len(clean_data[d])):
-                    if i == j:
-                        continue
-                    lj = datetime.strptime(clean_data[d][j][0], "%H:%M")
-                    rj = datetime.strptime(clean_data[d][j][1], "%H:%M")
 
-                    if rj < lj:
-                        continue
+                lj = datetime.strptime(clean_data[d][j][0], "%H:%M")
+                rj = datetime.strptime(clean_data[d][j][1], "%H:%M")
 
-                    if li < lj < ri or li < rj < ri:
-                        if li.strftime("%H:%M") == "00:00":
-                            clean_data[d][i] = [li.strftime("%H:%M"), li.strftime("%H:%M"), f"!!! {clean_data[d][i][1]}"]
-                        else:
-                            clean_data[d][i] = [li.strftime("%H:%M"), (li - timedelta(seconds=1)).strftime("%H:%M"), f"!!! {clean_data[d][i][1]}"]
+                if li < rj:
+                    if li.strftime("%H:%M") == "00:00":
+                        clean_data[d][i] = [li.strftime("%H:%M"), li.strftime("%H:%M"), f"!!! {clean_data[d][i][1]}"]
+                    else:
+                        clean_data[d][i] = [li.strftime("%H:%M"), (li - timedelta(seconds=1)).strftime("%H:%M"),
+                                            f"!!! {clean_data[d][i][1]}"]
 
-                        if lj.strftime("%H:%M") == "00:00":
-                            clean_data[d][j] = [lj.strftime("%H:%M"), lj.strftime("%H:%M"), f"!!! {clean_data[d][j][1]}"]
-                        else:
-                            clean_data[d][j] = [lj.strftime("%H:%M"), (lj - timedelta(seconds=1)).strftime("%H:%M"), f"!!! {clean_data[d][j][1]}"]
+                    if lj.strftime("%H:%M") == "00:00":
+                        clean_data[d][j] = [lj.strftime("%H:%M"), lj.strftime("%H:%M"), f"!!! {clean_data[d][j][1]}"]
+                    else:
+                        clean_data[d][j] = [lj.strftime("%H:%M"), (lj - timedelta(seconds=1)).strftime("%H:%M"), f"!!! {clean_data[d][j][1]}"]
+
+                if ri > rj:
+                    j = i
 
             for i in range(len(clean_data[d])):
                 if clean_data[d][i][0] == clean_data[d][i][1] == "23:59" and len(clean_data[d][i]) == 2:
