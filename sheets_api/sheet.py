@@ -106,7 +106,7 @@ class Sheet:
         self.work_hours = work_hours
 
     def create_sheet(self):
-        results = self.sheet.sheets().copyTo(spreadsheetId="1e28J_83AL8hrBtvLuBarlZnjAbEJmXYQOgOMVGyxWfk",
+        results = self.sheet.sheets().copyTo(spreadsheetId="1ov1nU58a9iajDTZLjZ-TwwvfcLNEgbidpOVfVJzOH0A",
                                              sheetId="263768700",
                                              body={'destination_spreadsheet_id': self.to_table}).execute()
 
@@ -143,7 +143,7 @@ class Sheet:
             body={"values": [[f"=СЧИТАТЬПУСТОТЫ(E3,AI3,AD3,Y3,T3,O3,J3)*12*{self.work_hours.split(':')[0]}"]]}).execute()
 
     def create_sheet2(self):
-        results = self.sheet.sheets().copyTo(spreadsheetId="1e28J_83AL8hrBtvLuBarlZnjAbEJmXYQOgOMVGyxWfk",
+        results = self.sheet.sheets().copyTo(spreadsheetId="1ov1nU58a9iajDTZLjZ-TwwvfcLNEgbidpOVfVJzOH0A",
                                              sheetId="263768700",
                                              body={'destination_spreadsheet_id': self.to_table}).execute()
 
