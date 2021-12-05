@@ -203,7 +203,9 @@ class Sheet:
         if self.from_table == "":
             return
 
-        data = self.sheet.values().get(spreadsheetId=self.from_table, range="Sheet1!J500:M100000").execute()
+        return 0
+
+        data = self.sheet.values().get(spreadsheetId=self.from_table, range="Sheet1!A3:E1000").execute()
         data = self._prepare_data(data.get('values', []))
         # print(data)
         interval_for_comments = ["E", "J", "O", "T", "Y", "AD", "AI"]
