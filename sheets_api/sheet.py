@@ -5,6 +5,8 @@ from google.oauth2 import service_account
 SCOPES = ['https://www.googleapis.com/auth/spreadsheets', 'https://www.googleapis.com/auth/drive']
 CREDENTIALS_FILE = 'credentials.json'
 
+date_format = '%Y-%m-%d'
+minus_timedelta = 0*timedelta(days=7)
 
 def get_users():
     credentials = service_account.Credentials.from_service_account_file(CREDENTIALS_FILE, scopes=SCOPES)
@@ -39,9 +41,9 @@ def _get_table_name():
     else:
         date = datetime.now() - timedelta(days=days_to_subtract)
 
-    # date = date - timedelta(days=7)  # TODO: remove!!!!
+    date = date - minus_timedelta
     table_name = f"{date.day} {date.strftime('%B')} {date.year}"
-    table_inner = date.strftime('%m/%d/%Y')
+    table_inner = date.strftime(date_format)
     table_past = f"{(date - timedelta(days=7)).day} {(date - timedelta(days=7)).strftime('%B')} {(date - timedelta(days=7)).year}"
     date += timedelta(days=7)
     table_future_name = f"{date.day} {date.strftime('%B')}"
@@ -58,9 +60,9 @@ def _get_table_name2():
         date = datetime.now() - timedelta(days=days_to_subtract)
 
     date += timedelta(days=7)
-    # date = date - timedelta(days=7)  # TODO: remove!!!!
+    date = date - minus_timedelta
     table_name = f"{date.day} {date.strftime('%B')} {date.year}"
-    table_inner = date.strftime('%m/%d/%Y')
+    table_inner = date.strftime(date_format)
     table_past = f"{(date - timedelta(days=7)).day} {(date - timedelta(days=7)).strftime('%B')} {(date - timedelta(days=7)).year}"
     date += timedelta(days=7)
     table_future_name = f"{date.day} {date.strftime('%B')}"
@@ -79,7 +81,7 @@ def _get_days_to_catch():
         date = datetime.now() - timedelta(days=days_to_subtract)
 
     date = date - timedelta(days=2)
-    # date = date - timedelta(days=7)  # TODO: remove!!!!
+    date = date - minus_timedelta
     days_to_catch.append([date.day, date.month, date.year])
     for i in range(6):
         date += timedelta(days=1)
@@ -203,11 +205,8 @@ class Sheet:
         if self.from_table == "":
             return
 
-        return 0
-
-        data = self.sheet.values().get(spreadsheetId=self.from_table, range="Sheet1!A3:E1000").execute()
+        data = self.sheet.values().get(spreadsheetId=self.from_table, range="Sheet1!A3:D10000").execute()
         data = self._prepare_data(data.get('values', []))
-        # print(data)
         interval_for_comments = ["E", "J", "O", "T", "Y", "AD", "AI"]
         for i in range(7):
             results = self.sheet.values().clear(
@@ -253,25 +252,25 @@ class Sheet:
 
             #если не в одном дне
             if row[0] != row[2]:
-                if [datetime.strptime(row[0], '%d/%m/%Y').day, datetime.strptime(row[0], '%d/%m/%Y').month,
-                    datetime.strptime(row[0], '%d/%m/%Y').year] in self.days_to_catch:
-                    if str(datetime.strptime(row[0], '%d/%m/%Y').day) not in clean_data:
-                        clean_data[str(datetime.strptime(row[0], '%d/%m/%Y').day)] = []
-                    if [row[1], "23:59"] not in clean_data[str(datetime.strptime(row[0], '%d/%m/%Y').day)]:
-                        clean_data[str(datetime.strptime(row[0], '%d/%m/%Y').day)].append([row[1], "23:59"])
+                if [datetime.strptime(row[0], date_format).day, datetime.strptime(row[0], date_format).month,
+                    datetime.strptime(row[0], date_format).year] in self.days_to_catch:
+                    if str(datetime.strptime(row[0], date_format).day) not in clean_data:
+                        clean_data[str(datetime.strptime(row[0], date_format).day)] = []
+                    if [row[1], "23:59"] not in clean_data[str(datetime.strptime(row[0], date_format).day)]:
+                        clean_data[str(datetime.strptime(row[0], date_format).day)].append([row[1], "23:59"])
 
-                if [datetime.strptime(row[2], '%d/%m/%Y').day, datetime.strptime(row[2], '%d/%m/%Y').month,
-                    datetime.strptime(row[2], '%d/%m/%Y').year] in self.days_to_catch:
-                    if str(datetime.strptime(row[2], '%d/%m/%Y').day) not in clean_data:
-                        clean_data[str(datetime.strptime(row[2], '%d/%m/%Y').day)] = []
-                    if ["00:00", row[3]] not in clean_data[str(datetime.strptime(row[2], '%d/%m/%Y').day)]:
-                        clean_data[str(datetime.strptime(row[2], '%d/%m/%Y').day)].append(["00:00", row[3]])
-            elif [datetime.strptime(row[0], '%d/%m/%Y').day, datetime.strptime(row[0], '%d/%m/%Y').month,
-                  datetime.strptime(row[0], '%d/%m/%Y').year] in self.days_to_catch:
-                if str(datetime.strptime(row[0], '%d/%m/%Y').day) not in clean_data:
-                    clean_data[str(datetime.strptime(row[0], '%d/%m/%Y').day)] = []
-                if [row[1], row[3]] not in clean_data[str(datetime.strptime(row[0], '%d/%m/%Y').day)]:
-                    clean_data[str(datetime.strptime(row[0], '%d/%m/%Y').day)].append([row[1], row[3]])
+                if [datetime.strptime(row[2], date_format).day, datetime.strptime(row[2], date_format).month,
+                    datetime.strptime(row[2], date_format).year] in self.days_to_catch:
+                    if str(datetime.strptime(row[2], date_format).day) not in clean_data:
+                        clean_data[str(datetime.strptime(row[2], date_format).day)] = []
+                    if ["00:00", row[3]] not in clean_data[str(datetime.strptime(row[2], date_format).day)]:
+                        clean_data[str(datetime.strptime(row[2], date_format).day)].append(["00:00", row[3]])
+            elif [datetime.strptime(row[0], date_format).day, datetime.strptime(row[0], date_format).month,
+                  datetime.strptime(row[0], date_format).year] in self.days_to_catch:
+                if str(datetime.strptime(row[0], date_format).day) not in clean_data:
+                    clean_data[str(datetime.strptime(row[0], date_format).day)] = []
+                if [row[1], row[3]] not in clean_data[str(datetime.strptime(row[0], date_format).day)]:
+                    clean_data[str(datetime.strptime(row[0], date_format).day)].append([row[1], row[3]])
 
         for d in clean_data.keys():
             for i in range(len(clean_data[d])):
